@@ -1,0 +1,22 @@
+PODS:
+  - challenges (0.0.1):
+    - Flutter
+  - Flutter (1.0.0)
+
+DEPENDENCIES:
+  - challenges (from `.symlinks/plugins/challenges/ios`)
+  - Flutter (from `Flutter`)
+
+EXTERNAL SOURCES:
+  challenges:
+    :path: ".symlinks/plugins/challenges/ios"
+  Flutter:
+    :path: Flutter
+
+SPEC CHECKSUMS:
+  challenges: c271d311472828d04bf7e546dddb9b8400c08e47
+  Flutter: 434fef37c0980e73bb6479ef766c45957d4b510c
+
+PODFILE CHECKSUM: aafe91acc616949ddb318b77800a7f51bffa2a4c
+
+COCOAPODS: 1.11.2
