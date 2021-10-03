@@ -53,8 +53,12 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
           ..repeat();
 
     _buttonScaleAnimationController =
-        AnimationController(vsync: this, duration: Duration(seconds: 1))
-          ..repeat(reverse: true);
+        AnimationController(vsync: this, duration: Duration(milliseconds: 500))
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed) {
+              _buttonScaleAnimationController.repeat(reverse: true);
+            }
+          });
     _widthAnimation = Tween<double>(begin: 300, end: 65).animate(
         CurvedAnimation(
             parent: _widthAnimationController, curve: Curves.easeInBack));
@@ -71,7 +75,7 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
     _centerDotRotationAnimation = Tween<double>(begin: 0, end: 2)
         .animate(_centerDotRotationAnimationController);
 
-    _buttonScaleAnimation = Tween<double>(begin: 1, end: 2)
+    _buttonScaleAnimation = Tween<double>(begin: 1, end: 1.2)
         .animate(_buttonScaleAnimationController);
 
     super.initState();
@@ -84,7 +88,9 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
       builder: (context, widget) {
         return GestureDetector(
           onTap: () {
-            _widthAnimationController.forward();
+            _widthAnimationController
+                .forward()
+                .whenComplete(() => _buttonScaleAnimationController.forward());
             _borderRadiusAnimationController.forward();
             _textAnimationController.forward().whenCompleteOrCancel(() {
               _centerDotOffsetAnimationController.forward();
@@ -93,24 +99,28 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
           child: AnimatedBuilder(
             animation: _borderRadiusAnimation,
             builder: (context, child) {
-              return Container(
-                width: _widthAnimation.value,
-                height: 65,
-                decoration: BoxDecoration(
-                  color: Colors.deepPurpleAccent,
-                  borderRadius:
-                      BorderRadius.circular(_borderRadiusAnimation.value),
-                ),
-                child: Center(
-                  child: CustomAnimatedText(
-                    textAnimation: _textAnimation,
-                    textAnimationController: _textAnimationController,
-                    centerDotOffsetAnimation: _centerDotOffsetAnimation,
-                    centerDotOffsetAnimationController:
-                        _centerDotOffsetAnimationController,
-                    centerDotRotationAnimation: _centerDotRotationAnimation,
-                    centerDotRotationAnimationController:
-                        _centerDotRotationAnimationController,
+              return AnimatedBuilder(
+                animation: _buttonScaleAnimation,
+                builder: (context, widget) => Container(
+                  width: _widthAnimation.value * _buttonScaleAnimation.value,
+                  height: 65 * _buttonScaleAnimation.value,
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurpleAccent,
+                    borderRadius: BorderRadius.circular(
+                        _borderRadiusAnimation.value *
+                            _buttonScaleAnimation.value),
+                  ),
+                  child: Center(
+                    child: CustomAnimatedText(
+                      textAnimation: _textAnimation,
+                      textAnimationController: _textAnimationController,
+                      centerDotOffsetAnimation: _centerDotOffsetAnimation,
+                      centerDotOffsetAnimationController:
+                          _centerDotOffsetAnimationController,
+                      centerDotRotationAnimation: _centerDotRotationAnimation,
+                      centerDotRotationAnimationController:
+                          _centerDotRotationAnimationController,
+                    ),
                   ),
                 ),
               );
