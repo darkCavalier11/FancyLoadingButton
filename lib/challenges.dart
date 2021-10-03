@@ -45,8 +45,10 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
     _borderRadiusAnimationController =
         AnimationController(vsync: this, duration: Duration(milliseconds: 500));
 
-    _centerDotOffsetAnimationController =
-        AnimationController(vsync: this, duration: Duration(milliseconds: 200));
+    _centerDotOffsetAnimationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 200),
+    );
 
     _centerDotRotationAnimationController =
         AnimationController(vsync: this, duration: Duration(seconds: 4))
@@ -83,51 +85,66 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _widthAnimation,
-      builder: (context, widget) {
-        return GestureDetector(
-          onTap: () {
-            _widthAnimationController
-                .forward()
-                .whenComplete(() => _buttonScaleAnimationController.forward());
-            _borderRadiusAnimationController.forward();
-            _textAnimationController.forward().whenCompleteOrCancel(() {
-              _centerDotOffsetAnimationController.forward();
-            });
-          },
-          child: AnimatedBuilder(
-            animation: _borderRadiusAnimation,
-            builder: (context, child) {
-              return AnimatedBuilder(
-                animation: _buttonScaleAnimation,
-                builder: (context, widget) => Container(
-                  width: _widthAnimation.value * _buttonScaleAnimation.value,
-                  height: 65 * _buttonScaleAnimation.value,
-                  decoration: BoxDecoration(
-                    color: Colors.deepPurpleAccent,
-                    borderRadius: BorderRadius.circular(
-                        _borderRadiusAnimation.value *
-                            _buttonScaleAnimation.value),
-                  ),
-                  child: Center(
-                    child: CustomAnimatedText(
-                      textAnimation: _textAnimation,
-                      textAnimationController: _textAnimationController,
-                      centerDotOffsetAnimation: _centerDotOffsetAnimation,
-                      centerDotOffsetAnimationController:
-                          _centerDotOffsetAnimationController,
-                      centerDotRotationAnimation: _centerDotRotationAnimation,
-                      centerDotRotationAnimationController:
-                          _centerDotRotationAnimationController,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedBuilder(
+          animation: _widthAnimation,
+          builder: (context, widget) {
+            return GestureDetector(
+              onTap: () {
+                _widthAnimationController.forward().whenComplete(
+                    () => _buttonScaleAnimationController.forward());
+                _borderRadiusAnimationController.forward();
+                _textAnimationController.forward().whenCompleteOrCancel(() {
+                  _centerDotOffsetAnimationController.forward();
+                });
+              },
+              child: AnimatedBuilder(
+                animation: _borderRadiusAnimation,
+                builder: (context, child) {
+                  return AnimatedBuilder(
+                    animation: _buttonScaleAnimation,
+                    builder: (context, widget) => Container(
+                      width:
+                          _widthAnimation.value * _buttonScaleAnimation.value,
+                      height: 65 * _buttonScaleAnimation.value,
+                      decoration: BoxDecoration(
+                        color: Colors.deepPurpleAccent,
+                        borderRadius: BorderRadius.circular(
+                            _borderRadiusAnimation.value *
+                                _buttonScaleAnimation.value),
+                      ),
+                      child: Center(
+                        child: CustomAnimatedText(
+                          textAnimation: _textAnimation,
+                          textAnimationController: _textAnimationController,
+                          centerDotOffsetAnimation: _centerDotOffsetAnimation,
+                          centerDotOffsetAnimationController:
+                              _centerDotOffsetAnimationController,
+                          centerDotRotationAnimation:
+                              _centerDotRotationAnimation,
+                          centerDotRotationAnimationController:
+                              _centerDotRotationAnimationController,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              );
+                  );
+                },
+              ),
+            );
+          },
+        ),
+        ElevatedButton(
+            onPressed: () async {
+              _buttonScaleAnimationController.reverse();
+              _centerDotOffsetAnimationController.reverse();
+              // Let the dot come to
+              await Future.delayed(Duration(milliseconds: 500));
+              _centerDotRotationAnimationController.stop();
             },
-          ),
-        );
-      },
+            child: Text('Reverse')),
+      ],
     );
   }
 }
