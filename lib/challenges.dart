@@ -26,13 +26,15 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
       _textAnimationController,
       _centerDotOffsetAnimationController,
       _centerDotRotationAnimationController,
-      _buttonScaleAnimationController;
+      _buttonScaleAnimationController,
+      _visibilityAnimationController;
   late final Animation<double> _widthAnimation,
       _borderRadiusAnimation,
       _textAnimation,
       _centerDotOffsetAnimation,
       _centerDotRotationAnimation,
-      _buttonScaleAnimation;
+      _buttonScaleAnimation,
+      _visibilityAnimation;
 
   @override
   void initState() {
@@ -53,6 +55,11 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
     _centerDotRotationAnimationController =
         AnimationController(vsync: this, duration: Duration(seconds: 4))
           ..repeat();
+
+    _visibilityAnimationController = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 1),
+    );
 
     _buttonScaleAnimationController =
         AnimationController(vsync: this, duration: Duration(milliseconds: 500))
@@ -79,6 +86,9 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
 
     _buttonScaleAnimation = Tween<double>(begin: 1, end: 1.2)
         .animate(_buttonScaleAnimationController);
+
+    _visibilityAnimation =
+        Tween<double>(begin: 0, end: 1).animate(_visibilityAnimationController);
 
     super.initState();
   }
@@ -117,6 +127,9 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
                       ),
                       child: Center(
                         child: CustomAnimatedText(
+                          visibilityAnimation: _visibilityAnimation,
+                          visibilityAnimationController:
+                              _visibilityAnimationController,
                           textAnimation: _textAnimation,
                           textAnimationController: _textAnimationController,
                           centerDotOffsetAnimation: _centerDotOffsetAnimation,
@@ -142,6 +155,7 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
               // Let the dot come to
               await Future.delayed(Duration(milliseconds: 500));
               _centerDotRotationAnimationController.stop();
+              _visibilityAnimationController.forward();
             },
             child: Text('Reverse')),
       ],
@@ -152,10 +166,12 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
 class CustomAnimatedText extends StatelessWidget {
   final AnimationController textAnimationController,
       centerDotOffsetAnimationController,
-      centerDotRotationAnimationController;
+      centerDotRotationAnimationController,
+      visibilityAnimationController;
   final Animation<double> textAnimation,
       centerDotOffsetAnimation,
-      centerDotRotationAnimation;
+      centerDotRotationAnimation,
+      visibilityAnimation;
   const CustomAnimatedText({
     required this.textAnimationController,
     required this.centerDotOffsetAnimationController,
@@ -164,6 +180,8 @@ class CustomAnimatedText extends StatelessWidget {
     required this.centerDotRotationAnimationController,
     required this.centerDotRotationAnimation,
     Key? key,
+    required this.visibilityAnimationController,
+    required this.visibilityAnimation,
   }) : super(key: key);
 
   @override
@@ -182,28 +200,46 @@ class CustomAnimatedText extends StatelessWidget {
               ),
             ),
             AnimatedBuilder(
-                animation: centerDotOffsetAnimation,
-                builder: (context, widget) {
-                  return AnimatedBuilder(
-                      animation: centerDotRotationAnimation,
-                      builder: (context, widget) {
-                        return Transform.rotate(
-                          angle: centerDotRotationAnimation.value * 5 * pi,
-                          child: Transform.translate(
-                            offset: Offset(centerDotOffsetAnimation.value,
-                                centerDotOffsetAnimation.value),
-                            child: Container(
-                              width: 22 - textAnimation.value,
-                              height: 22 - textAnimation.value,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10),
+              animation: centerDotOffsetAnimation,
+              builder: (context, widget) {
+                return AnimatedBuilder(
+                    animation: centerDotRotationAnimation,
+                    builder: (context, widget) {
+                      return Transform.rotate(
+                        angle: centerDotRotationAnimation.value * 5 * pi,
+                        child: Transform.translate(
+                          offset: Offset(centerDotOffsetAnimation.value,
+                              centerDotOffsetAnimation.value),
+                          child: AnimatedBuilder(
+                            animation: visibilityAnimation,
+                            builder: (context, widget) => Opacity(
+                              opacity: 1 - visibilityAnimation.value,
+                              child: Container(
+                                width: 22 - textAnimation.value,
+                                height: 22 - textAnimation.value,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                               ),
                             ),
                           ),
-                        );
-                      });
-                }),
+                        ),
+                      );
+                    });
+              },
+            ),
+            AnimatedBuilder(
+              animation: visibilityAnimation,
+              builder: (context, widget) => Opacity(
+                opacity: visibilityAnimation.value,
+                child: Icon(
+                  Icons.check_rounded,
+                  size: 30,
+                  color: Colors.white,
+                ),
+              ),
+            )
           ],
         );
       },
