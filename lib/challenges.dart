@@ -1,26 +1,63 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 
 class FancyLoadingButton extends StatelessWidget {
-  const FancyLoadingButton({Key? key}) : super(key: key);
+  final Color? primaryColor;
+  final Color? accentColor;
+  final double? width;
+  final double? height;
+  final Function() onTap;
+  final FancyButtonAnimationController fancyButtonAnimationController;
+  const FancyLoadingButton(
+      {Key? key,
+      this.primaryColor,
+      this.accentColor,
+      this.width,
+      this.height,
+      required this.fancyButtonAnimationController,
+      required this.onTap})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Button();
+    return _Button(
+      fancyButtonAnimationController: fancyButtonAnimationController,
+      onTap: onTap,
+    );
   }
 }
 
-class Button extends StatefulWidget {
-  const Button({
+class _Button extends StatefulWidget {
+  final Color? primaryColor;
+  final Color? accentColor;
+  final double? width;
+  final double? height;
+  final Function() onTap;
+  final FancyButtonAnimationController fancyButtonAnimationController;
+  const _Button({
     Key? key,
+    this.primaryColor,
+    this.accentColor,
+    this.width,
+    this.height,
+    required this.fancyButtonAnimationController,
+    required this.onTap,
   }) : super(key: key);
 
   @override
   _ButtonState createState() => _ButtonState();
 }
 
-class _ButtonState extends State<Button> with TickerProviderStateMixin {
+class _ButtonState extends State<_Button> with TickerProviderStateMixin {
+  late final Color? primaryColor;
+  late final Color? accentColor;
+  late final double? width;
+  late final double? height;
+  late final Function() onTap;
+  late final Widget initial;
+  late final Stream<String> _streamSubscription;
   late final AnimationController _widthAnimationController,
       _borderRadiusAnimationController,
       _textAnimationController,
@@ -38,6 +75,11 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
 
   @override
   void initState() {
+    primaryColor = widget.primaryColor;
+    accentColor = widget.accentColor;
+    width = widget.width;
+    height = widget.height;
+    onTap = widget.onTap;
     _widthAnimationController =
         AnimationController(vsync: this, duration: Duration(milliseconds: 500));
 
@@ -89,81 +131,90 @@ class _ButtonState extends State<Button> with TickerProviderStateMixin {
 
     _visibilityAnimation =
         Tween<double>(begin: 0, end: 1).animate(_visibilityAnimationController);
-
     super.initState();
+  }
+
+  void forward() {
+    _widthAnimationController
+        .forward()
+        .whenComplete(() => _buttonScaleAnimationController.forward());
+    _borderRadiusAnimationController.forward();
+    _textAnimationController.forward().whenCompleteOrCancel(() {
+      _centerDotOffsetAnimationController.forward();
+    });
+  }
+
+  void complete() async {
+    _buttonScaleAnimationController.reverse();
+    _centerDotOffsetAnimationController.reverse();
+    // Let the dot come to
+    await Future.delayed(Duration(milliseconds: 500));
+    _centerDotRotationAnimationController.stop();
+    _visibilityAnimationController.forward();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AnimatedBuilder(
-          animation: _widthAnimation,
-          builder: (context, widget) {
-            return GestureDetector(
-              onTap: () {
-                _widthAnimationController.forward().whenComplete(
-                    () => _buttonScaleAnimationController.forward());
-                _borderRadiusAnimationController.forward();
-                _textAnimationController.forward().whenCompleteOrCancel(() {
-                  _centerDotOffsetAnimationController.forward();
-                });
-              },
-              child: AnimatedBuilder(
-                animation: _borderRadiusAnimation,
-                builder: (context, child) {
-                  return AnimatedBuilder(
-                    animation: _buttonScaleAnimation,
-                    builder: (context, widget) => Container(
-                      width:
-                          _widthAnimation.value * _buttonScaleAnimation.value,
-                      height: 65 * _buttonScaleAnimation.value,
-                      decoration: BoxDecoration(
-                        color: Colors.deepPurpleAccent,
-                        borderRadius: BorderRadius.circular(
-                            _borderRadiusAnimation.value *
-                                _buttonScaleAnimation.value),
-                      ),
-                      child: Center(
-                        child: CustomAnimatedText(
-                          visibilityAnimation: _visibilityAnimation,
-                          visibilityAnimationController:
-                              _visibilityAnimationController,
-                          textAnimation: _textAnimation,
-                          textAnimationController: _textAnimationController,
-                          centerDotOffsetAnimation: _centerDotOffsetAnimation,
-                          centerDotOffsetAnimationController:
-                              _centerDotOffsetAnimationController,
-                          centerDotRotationAnimation:
-                              _centerDotRotationAnimation,
-                          centerDotRotationAnimationController:
-                              _centerDotRotationAnimationController,
+    return StreamBuilder<String>(
+        stream: widget.fancyButtonAnimationController.stream,
+        builder: (context, snapshot) {
+          if (snapshot.data == 'Complete') {
+            complete();
+          }
+          if (snapshot.data == 'Start') {
+            forward();
+          }
+          return AnimatedBuilder(
+            animation: _widthAnimation,
+            builder: (context, widget) {
+              return GestureDetector(
+                onTap: () {
+                  onTap();
+                  if (snapshot.data == 'forward') forward();
+                },
+                child: AnimatedBuilder(
+                  animation: _borderRadiusAnimation,
+                  builder: (context, child) {
+                    return AnimatedBuilder(
+                      animation: _buttonScaleAnimation,
+                      builder: (context, widget) => Container(
+                        width:
+                            _widthAnimation.value * _buttonScaleAnimation.value,
+                        height: 65 * _buttonScaleAnimation.value,
+                        decoration: BoxDecoration(
+                          color: Colors.deepPurpleAccent,
+                          borderRadius: BorderRadius.circular(
+                              _borderRadiusAnimation.value *
+                                  _buttonScaleAnimation.value),
+                        ),
+                        child: Center(
+                          child: _CustomAnimatedText(
+                            visibilityAnimation: _visibilityAnimation,
+                            visibilityAnimationController:
+                                _visibilityAnimationController,
+                            textAnimation: _textAnimation,
+                            textAnimationController: _textAnimationController,
+                            centerDotOffsetAnimation: _centerDotOffsetAnimation,
+                            centerDotOffsetAnimationController:
+                                _centerDotOffsetAnimationController,
+                            centerDotRotationAnimation:
+                                _centerDotRotationAnimation,
+                            centerDotRotationAnimationController:
+                                _centerDotRotationAnimationController,
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
-              ),
-            );
-          },
-        ),
-        ElevatedButton(
-            onPressed: () async {
-              _buttonScaleAnimationController.reverse();
-              _centerDotOffsetAnimationController.reverse();
-              // Let the dot come to
-              await Future.delayed(Duration(milliseconds: 500));
-              _centerDotRotationAnimationController.stop();
-              _visibilityAnimationController.forward();
+                    );
+                  },
+                ),
+              );
             },
-            child: Text('Reverse')),
-      ],
-    );
+          );
+        });
   }
 }
 
-class CustomAnimatedText extends StatelessWidget {
+class _CustomAnimatedText extends StatelessWidget {
   final AnimationController textAnimationController,
       centerDotOffsetAnimationController,
       centerDotRotationAnimationController,
@@ -172,7 +223,7 @@ class CustomAnimatedText extends StatelessWidget {
       centerDotOffsetAnimation,
       centerDotRotationAnimation,
       visibilityAnimation;
-  const CustomAnimatedText({
+  const _CustomAnimatedText({
     required this.textAnimationController,
     required this.centerDotOffsetAnimationController,
     required this.centerDotOffsetAnimation,
@@ -245,4 +296,18 @@ class CustomAnimatedText extends StatelessWidget {
       },
     );
   }
+}
+
+class FancyButtonAnimationController {
+  StreamController<String> _interaction = StreamController<String>();
+
+  void start() {
+    _interaction.sink.add('Start');
+  }
+
+  void complete() {
+    _interaction.sink.add('Complete');
+  }
+
+  Stream<String> get stream => _interaction.stream;
 }
